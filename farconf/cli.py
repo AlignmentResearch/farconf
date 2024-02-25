@@ -4,7 +4,7 @@ from typing import Any, Mapping, Sequence, TypeVar
 
 import yaml
 
-from farconf.serialize import from_dict
+from farconf.serialize import deserialize_class_or_function, from_dict, to_dict
 
 T = TypeVar("T")
 
@@ -71,6 +71,12 @@ def parse_cli_into_dict(args: Sequence[str], *, datatype: type | None = None) ->
             _, file_path = _equals_key_and_value(arg)
             with Path(file_path).open() as f:
                 d = yaml.load(f, yaml.SafeLoader)
+
+        elif arg.startswith("--from-py-fn="):
+            _, module_path = _equals_key_and_value(arg)
+            fn = deserialize_class_or_function(module_path)
+
+            d = to_dict(fn())
 
         else:
             if arg.startswith("-"):
