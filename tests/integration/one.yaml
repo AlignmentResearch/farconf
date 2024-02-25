@@ -1,0 +1,4 @@
+_type_: tests.integration.class_defs:OneDefault
+c:
+  _type_: tests.integration.class_defs:SubTwoConfig
+  two: 432

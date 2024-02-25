@@ -50,19 +50,29 @@ class ABCConverter(Converter):
             out = SchemaConverter().convert(ctx)
             if self._TYPE_KEY in out:
                 raise ValueError(
-                    f"Trying to serialize an object of class {cls}, but it has a {self._TYPE_KEY} attribute which I would have to overwrite."
+                    f"Trying to serialize an object of class {cls}, but it has a {self._TYPE_KEY} attribute which I would "
+                    "have to overwrite."
                 )
             out[self._TYPE_KEY] = serialize_class_or_function(cls)
             return out
 
         elif ctx.direction.is_deserialize():
+            cls: type[abc.ABC] = datatype.type
             try:
                 cls_path: str = ctx.value.pop(self._TYPE_KEY)
             except KeyError:
-                raise KeyError(f"dict {ctx.value} has no key {self._TYPE_KEY}")
-            ctx.datatype = TypeHint(deserialize_class_or_function(cls_path))
-            return SchemaConverter().convert(ctx)
-
+                raise KeyError(
+                    f"Input {ctx.value} has no key {self._TYPE_KEY}, so I don't know which subclass of {cls} to instantiate."
+                )
+            concrete_cls: type[abc.ABC] = deserialize_class_or_function(cls_path)  # type: ignore
+            ctx.datatype = TypeHint(concrete_cls)
+            if not issubclass(concrete_cls, cls):
+                raise TypeError(
+                    f"_type_-specified class {concrete_cls} is not a subclass of {cls}, which was specified via Python "
+                    "type hints."
+                )
+            out = SchemaConverter().convert(ctx)
+            return out
         else:
             raise ValueError(f"Unknown {ctx.direction=}")
 
