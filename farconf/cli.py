@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Mapping, Sequence, TypeVar
+from typing import Any, Mapping, TypeVar
 
 import yaml
 
@@ -50,7 +50,7 @@ class CLIParseError(ValueError):
     pass
 
 
-def parse_cli_into_dict(args: Sequence[str], *, datatype: type | None = None) -> dict[str, Any]:
+def parse_cli_into_dict(args: list[str], *, datatype: type | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for arg in args:
         if arg.startswith("--set="):
@@ -107,7 +107,7 @@ def parse_cli_into_dict(args: Sequence[str], *, datatype: type | None = None) ->
     return out
 
 
-def parse_cli(args: Sequence[str], datatype: type[T]) -> T:
+def parse_cli(args: list[str], datatype: type[T]) -> T:
     cfg: dict = parse_cli_into_dict(args)
     out = from_dict(cfg, datatype)
     return out

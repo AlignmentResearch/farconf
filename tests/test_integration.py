@@ -12,6 +12,13 @@ def test_set():
     assert out == dict(b=dict(c=3), a=dict(b=dict(c=4)))
 
 
+def test_raw_set():
+    assert parse_cli_into_dict(["a=2"]) == dict(a=2)
+    assert parse_cli_into_dict(["b.c=2", "_type_=sometype:Blah", "a=b=c=d"]) == dict(
+        b=dict(c=2), _type_="sometype:Blah", a="b=c=d"
+    )
+
+
 INTEGRATION_DIR = Path("tests/integration")
 
 NON_ABSTRACT_PATH = INTEGRATION_DIR / "non_abstract.yaml"
@@ -53,3 +60,9 @@ def test_malformed_args():
 
     with pytest.raises(CLIParseError):
         _ = parse_cli_into_dict(["a"])
+
+    with pytest.raises(CLIParseError):
+        _ = parse_cli_into_dict(["-a.b=2"])
+
+    # Not really a use case we want to support, as `a-` is not a valid attribute name. But we'll allow it for now.
+    assert parse_cli_into_dict(["a-._b=3"]) == {"a-": {"_b": 3}}
