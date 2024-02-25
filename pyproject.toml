@@ -63,5 +63,5 @@ exclude = []
 
 [tool.coverage.run]
 omit = [
-  "tests/**"
+  "tests/test_*.py"
 ]

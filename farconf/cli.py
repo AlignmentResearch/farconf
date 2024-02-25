@@ -46,6 +46,10 @@ def assign_from_keyvalue(out: dict[str, Any], key_value_pair: str) -> None:
     assign_from_dotlist(out, path_to_key, parsed_value)
 
 
+class CLIParseError(ValueError):
+    pass
+
+
 def parse_cli_into_dict(args: Sequence[str], *, datatype: type | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for arg in args:
@@ -60,6 +64,14 @@ def parse_cli_into_dict(args: Sequence[str], *, datatype: type | None = None) ->
             with Path(file_path).open() as f:
                 parsed_value = yaml.load(f, yaml.SafeLoader)
             assign_from_dotlist(out, path_to_key, parsed_value)
+
+        elif arg.startswith("--set-from-py-fn="):
+            _, key_value_pair = _equals_key_and_value(arg)
+
+            path_to_key, module_path = _equals_key_and_value(key_value_pair)
+            fn = deserialize_class_or_function(module_path)
+            serialized_object = to_dict(fn())
+            assign_from_dotlist(out, path_to_key, serialized_object)
 
         elif arg.startswith("--from-file="):
             _, file_path = _equals_key_and_value(arg)
@@ -76,13 +88,22 @@ def parse_cli_into_dict(args: Sequence[str], *, datatype: type | None = None) ->
 
         else:
             if arg.startswith("-"):
-                raise ValueError(
-                    "Only `--set`, `--set-from-file` and `--from-file` arguments can start with `-`. If you need to set a key which starts "
-                    "with `-`, use `--set=-key-name=value`."
+                raise CLIParseError(
+                    "Only `--set`, `--set-from-file`, `--from-file`,  `--from-py-fn` and `--set-from-py-fn` arguments "
+                    "can start with `-`. If you need to set a key which starts with `-`, use `--set=-key-name=value`."
                 )
             if "=" not in arg:
-                raise ValueError(f"Argument {arg} is not a valid assignment, it contains no `=`.")
+                raise CLIParseError(f"Argument {arg} is not a valid assignment, it contains no `=`.")
             assign_from_keyvalue(out, arg)
+
+        if datatype is not None:
+            try:
+                _ = from_dict(out, datatype)
+            except Exception as e:
+                raise CLIParseError(
+                    f"Failed to parse command-line input after argument {arg}. Full CLI: {args}. Original exception: {e}"
+                )
+
     return out
 
 
