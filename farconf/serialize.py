@@ -1,10 +1,10 @@
 import abc
 import importlib
 from types import FunctionType
-from typing import Any, ClassVar
+from typing import Any, ClassVar, TypeVar
 
 import databind.json
-from databind.core import Context, Converter, ObjectMapper
+from databind.core import Context, Converter, ObjectMapper, Setting, SettingsProvider
 from databind.json.converters import SchemaConverter
 from typeapi import AnnotatedTypeHint, ClassTypeHint, TypeHint
 
@@ -71,3 +71,22 @@ def get_object_mapper() -> ObjectMapper[Any, databind.json.JsonType]:
     mapper = databind.json.get_object_mapper()
     mapper.module.register(ABCConverter(), first=True)
     return mapper
+
+
+T = TypeVar("T")
+
+
+def from_dict(
+    value: databind.json.JsonType, datatype: type[T], *, settings: SettingsProvider | list[Setting] | None = None
+) -> T:
+    "Get a value of type `datatype` from a dict object."
+    return get_object_mapper().deserialize(value, datatype, settings=settings)
+
+
+def to_dict(
+    value: Any, datatype: type[T] | None = None, *, settings: SettingsProvider | list[Setting] | None = None
+) -> databind.json.JsonType:
+    "Convert `value` to a dict object which can be serialized."
+    if datatype is None:
+        datatype = type(value)
+    return get_object_mapper().serialize(value, datatype, settings=settings)
