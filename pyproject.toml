@@ -1,0 +1,56 @@
+[project]
+name = "farconf"
+version = "0.1.0"
+description = "Easy dataclass-based configuration for machine learning projects"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text="Copyright FAR AI 2023-2024. All rights reserved."}
+keywords = []
+
+authors = [
+  {name = "Adrià Garriga-Alonso", email = "adria@far.ai"},
+]
+
+maintainers = [
+  {name = "Adrià Garriga-Alonso", email = "adria@far.ai"},
+]
+
+classifiers = []
+
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "ruff ~=0.1.13",
+    "pre-commit ~=3.6.0",
+    "pyright ~=1.1.350",
+    "pytest ~=8.0.0",
+]
+
+[project.urls]
+Repository = "https://github.com/AlignmentResearch/farconf/"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["farconf"]
+
+[tool.ruff.format]
+exclude = []
+
+[tool.ruff]
+line-length = 127
+target-version = "py310"
+exclude = []
+
+[tool.ruff.lint]
+# Enable the isort rules.
+extend-select = ["I"]
+
+[tool.ruff.isort]
+known-third-party = []
+
+[tool.pyright]
+exclude = []

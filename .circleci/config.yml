@@ -1,0 +1,42 @@
+version: 2.1
+
+workflows:
+  all-tests:
+    jobs:
+    - test:
+        matrix:
+          parameters:
+            python-version: ["3.10", "3.11", "3.12"]
+
+jobs:
+  test:
+    parameters:
+      python-version:
+        type: string
+
+    docker:
+    - image: cimg/python:<< parameters.python-version >>
+    resource_class: small
+    steps:
+    - checkout
+    - run:
+        name: Install dependencies
+        command: |
+          pip install -e '.[dev]'
+    # Run the most informative steps first, even if they're longer
+    - run:
+        name: Tests
+        command: |
+          pytest .
+    - run:
+        name: Check types
+        command: |
+          pyright .
+    - run:
+        name: Lint
+        command: |
+          ruff .
+    - run:
+        name: Check formatting
+        command: |
+          ruff format --diff .
