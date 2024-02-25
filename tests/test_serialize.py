@@ -125,8 +125,11 @@ class DataClsWithType:
     _type_: str = "hi"
 
 
-@pytest.mark.parametrize("cls", [AbstractClsWithType, ClsWithType, AbstractDataClsWithType, DataClsWithType])
+@pytest.mark.parametrize("cls", [AbstractDataClsWithType, DataClsWithType, AbstractClsWithType, ClsWithType])
 def test_serialize_with_type_fails(cls: Any):
     obj = cls()
     with pytest.raises(TypeError, match="it has a '_type_' attribute which I would have to overwrite.$"):
         to_dict(obj)
+
+    with pytest.raises(TypeError, match="it has a '_type_' attribute which I would have to overwrite.$"):
+        from_dict({}, cls)

@@ -41,18 +41,23 @@ class ABCConverter(Converter):
 
     def convert(self, ctx: Context) -> Any:
         datatype = _unwrap_annotated(ctx.datatype)
-        if not (isinstance(datatype, ClassTypeHint) and issubclass(datatype.type, abc.ABC)):
+        if not isinstance(datatype, ClassTypeHint):
+            raise NotImplementedError
+
+        if hasattr(datatype.type, "_type_"):
+            raise TypeError(
+                f"Trying to de/serialize an object of class {datatype.type}, but it has a '{self._TYPE_KEY}' attribute which I would "
+                "have to overwrite."
+            )
+
+        if not issubclass(datatype.type, abc.ABC):
             raise NotImplementedError
 
         if ctx.direction.is_serialize():
             cls = ctx.value.__class__
             ctx.datatype = TypeHint(cls)
             out = SchemaConverter().convert(ctx)
-            if self._TYPE_KEY in out:
-                raise TypeError(
-                    f"Trying to serialize an object of class {cls}, but it has a '{self._TYPE_KEY}' attribute which I would "
-                    "have to overwrite."
-                )
+            assert self._TYPE_KEY not in out
             out[self._TYPE_KEY] = serialize_class_or_function(cls)
             return out
 
