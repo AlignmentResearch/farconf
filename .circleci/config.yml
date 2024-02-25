@@ -8,6 +8,12 @@ workflows:
           parameters:
             python-version: ["3.10", "3.11", "3.12"]
 
+commands:
+  save-worker-test-results:
+    steps:
+      - store_test_results: # report the test results (in test-results/junit.xml) to CircleCI
+          path: /workspace/test-results
+
 jobs:
   test:
     parameters:
@@ -27,7 +33,8 @@ jobs:
     - run:
         name: Tests
         command: |
-          pytest --cov --cov-fail-under=100 --cov-report=xml
+          pytest --junitxml=test-results/junit.xml --cov --cov-fail-under=100 --cov-report=xml
+    - save-worker-test-results
     - run:
         name: Check types
         command: |
