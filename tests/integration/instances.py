@@ -6,7 +6,18 @@ from tests.integration.class_defs import (
     SubTwoConfig,
 )
 
-unspecified_two = OneUnspecified(SubTwoConfig(53421))
-default_two = OneDefault(SubTwoConfig(1234))
-maybe_yes = OneMaybe(SubOneConfig(55555))
-maybe_no = OneMaybe(None)
+
+def unspecified_two():
+    return OneUnspecified(SubTwoConfig(53421))
+
+
+def default_two():
+    return OneDefault(SubTwoConfig(1234))
+
+
+def maybe_yes():
+    return OneMaybe(SubOneConfig(55555))
+
+
+def maybe_no():
+    return OneMaybe(None)

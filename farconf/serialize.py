@@ -49,8 +49,8 @@ class ABCConverter(Converter):
             ctx.datatype = TypeHint(cls)
             out = SchemaConverter().convert(ctx)
             if self._TYPE_KEY in out:
-                raise ValueError(
-                    f"Trying to serialize an object of class {cls}, but it has a {self._TYPE_KEY} attribute which I would "
+                raise TypeError(
+                    f"Trying to serialize an object of class {cls}, but it has a '{self._TYPE_KEY}' attribute which I would "
                     "have to overwrite."
                 )
             out[self._TYPE_KEY] = serialize_class_or_function(cls)
@@ -62,7 +62,7 @@ class ABCConverter(Converter):
                 cls_path: str = ctx.value.pop(self._TYPE_KEY)
             except KeyError:
                 raise KeyError(
-                    f"Input {ctx.value} has no key {self._TYPE_KEY}, so I don't know which subclass of {cls} to instantiate."
+                    f'Input {ctx.value} has no key "{self._TYPE_KEY}", so I don\'t know which subclass of {cls} to instantiate.'
                 )
             concrete_cls: type[abc.ABC] = deserialize_class_or_function(cls_path)  # type: ignore
             ctx.datatype = TypeHint(concrete_cls)
