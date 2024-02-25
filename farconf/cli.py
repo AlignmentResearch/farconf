@@ -101,13 +101,13 @@ def parse_cli_into_dict(args: list[str], *, datatype: type | None = None) -> dic
                 _ = from_dict(out, datatype)
             except Exception as e:
                 raise CLIParseError(
-                    f"Failed to parse command-line input after argument {arg}. Full CLI: {args}. Original exception: {e}"
+                    f"Command-line input is not a valid {datatype} after argument {arg}. Full CLI: {args}. Original exception: {e}"
                 )
 
     return out
 
 
-def parse_cli(args: list[str], datatype: type[T]) -> T:
-    cfg: dict = parse_cli_into_dict(args)
+def parse_cli(args: list[str], datatype: type[T], *, type_check_partial: bool = True) -> T:
+    cfg: dict = parse_cli_into_dict(args, datatype=datatype if type_check_partial else None)
     out = from_dict(cfg, datatype)
     return out

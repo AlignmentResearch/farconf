@@ -1,7 +1,7 @@
 import abc
 import importlib
 from types import FunctionType
-from typing import Any, ClassVar, TypeVar
+from typing import Any, ClassVar, Mapping, TypeVar
 
 import databind.json
 from databind.core import Context, Converter, ObjectMapper, Setting, SettingsProvider
@@ -50,10 +50,10 @@ class ABCConverter(Converter):
                 "have to overwrite."
             )
 
-        if not issubclass(datatype.type, abc.ABC):
-            raise NotImplementedError
-
         if ctx.direction.is_serialize():
+            if not issubclass(datatype.type, abc.ABC):
+                raise NotImplementedError
+
             cls = ctx.value.__class__
             ctx.datatype = TypeHint(cls)
             out = SchemaConverter().convert(ctx)
@@ -62,7 +62,11 @@ class ABCConverter(Converter):
             return out
 
         elif ctx.direction.is_deserialize():
+            if not issubclass(datatype.type, abc.ABC) and not (isinstance(ctx.value, Mapping) and self._TYPE_KEY in ctx.value):
+                raise NotImplementedError
+
             cls: type[abc.ABC] = datatype.type
+            ctx.value = dict(ctx.value)  # Copy before potentially popping
             try:
                 cls_path: str = ctx.value.pop(self._TYPE_KEY)
             except KeyError:

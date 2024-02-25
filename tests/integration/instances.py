@@ -8,7 +8,7 @@ from tests.integration.class_defs import (
 
 
 def unspecified_two():
-    return OneUnspecified(SubTwoConfig(53421))
+    return OneUnspecified(SubTwoConfig(54321))
 
 
 def default_two():

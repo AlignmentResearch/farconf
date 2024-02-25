@@ -1,10 +1,19 @@
+import abc
 from pathlib import Path
 from typing import Sequence
 
 import pytest
 import yaml
 
-from farconf import CLIParseError, parse_cli_into_dict
+from farconf import CLIParseError, parse_cli, parse_cli_into_dict
+from tests.integration.class_defs import (
+    NonAbstractDataclass,
+    OneDefault,
+    OneGeneric,
+    OneUnspecified,
+    SubTwoConfig,
+)
+from tests.integration.instances import OneMaybe, SubOneConfig
 
 
 def test_set():
@@ -22,8 +31,71 @@ def test_raw_set():
 INTEGRATION_DIR = Path("tests/integration")
 
 NON_ABSTRACT_PATH = INTEGRATION_DIR / "non_abstract.yaml"
+NON_ABSTRACT_ALONE_PATH = INTEGRATION_DIR / "non_abstract_alone.yaml"
+ONE_PATH = INTEGRATION_DIR / "one.yaml"
+ONEMAYBE_NO_PATH = INTEGRATION_DIR / "onemaybe_no.yaml"
+SUBONE_PATH = INTEGRATION_DIR / "subone.yaml"
+SUBTWO_PATH = INTEGRATION_DIR / "subtwo.yaml"
+
 INSTANCES_PYPATH = "tests.integration.instances"
 CLASSDEFS_PYPATH = "tests.integration.class_defs"
+
+
+def test_none_abstract_parsing():
+    assert parse_cli([f"--from-file={NON_ABSTRACT_PATH}"], NonAbstractDataclass) == NonAbstractDataclass(5489)
+    assert parse_cli([f"--from-file={NON_ABSTRACT_ALONE_PATH}"], NonAbstractDataclass) == NonAbstractDataclass(333)
+
+    with pytest.raises(TypeError):
+        _ = parse_cli([f"--from-file={NON_ABSTRACT_PATH}"], abc.ABC, type_check_partial=False)
+
+    with pytest.raises(CLIParseError):
+        _ = parse_cli([f"--from-file={NON_ABSTRACT_PATH}"], abc.ABC, type_check_partial=True)
+
+    with pytest.raises(KeyError, match='has no key "_type_"'):
+        _ = parse_cli([f"--from-file={NON_ABSTRACT_ALONE_PATH}"], abc.ABC, type_check_partial=False)
+
+
+def test_yaml_cli_usage():
+    assert parse_cli([f"--from-py-fn={INSTANCES_PYPATH}:maybe_yes"], OneGeneric) == OneMaybe(SubOneConfig(55555))
+    assert parse_cli(
+        [f"--from-py-fn={INSTANCES_PYPATH}:maybe_yes", f"--from-file={ONEMAYBE_NO_PATH}"], OneGeneric
+    ) == OneMaybe(None)
+    assert parse_cli([f"--from-py-fn={INSTANCES_PYPATH}:default_two"], OneGeneric) == OneDefault(SubTwoConfig(1234))
+
+    assert parse_cli([f"--from-py-fn={INSTANCES_PYPATH}:default_two", f"--from-file={ONE_PATH}"], OneGeneric) == OneDefault(
+        SubTwoConfig(432)
+    )
+
+    assert parse_cli([f"--from-py-fn={INSTANCES_PYPATH}:unspecified_two"], OneGeneric) == OneUnspecified(SubTwoConfig(54321))
+
+    assert parse_cli(
+        [f"--from-py-fn={INSTANCES_PYPATH}:unspecified_two", f"--set-from-file=c={SUBONE_PATH}"], OneGeneric
+    ) == OneUnspecified(SubOneConfig(42))
+
+    assert parse_cli(
+        [f"--from-py-fn={INSTANCES_PYPATH}:unspecified_two", f"--set-from-file=c={SUBTWO_PATH}"],
+        OneGeneric,
+    ) == OneUnspecified(SubTwoConfig(11))
+
+
+def test_overwrite_with_object():
+    assert parse_cli(
+        [
+            f"--from-py-fn={INSTANCES_PYPATH}:unspecified_two",
+            f"--set-from-file=c={SUBONE_PATH}",
+            f"--set-from-file=c={SUBTWO_PATH}",
+        ],
+        OneGeneric,
+    ) == OneUnspecified(SubTwoConfig(11))
+
+    assert parse_cli(
+        [
+            f"--from-py-fn={INSTANCES_PYPATH}:unspecified_two",
+            f"--set-from-file=c={SUBTWO_PATH}",
+            f"--set-from-file=c={SUBONE_PATH}",
+        ],
+        OneGeneric,
+    ) == OneUnspecified(SubOneConfig(42))
 
 
 def _integration_args_and_expected() -> list[tuple[list[str], dict]]:
