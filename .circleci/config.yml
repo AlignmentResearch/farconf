@@ -27,7 +27,7 @@ jobs:
     - run:
         name: Tests
         command: |
-          pytest .
+          pytest --cov --cov-fail-under=100 --cov-report=xml
     - run:
         name: Check types
         command: |

@@ -74,7 +74,7 @@ class ABCConverter(Converter):
             out = SchemaConverter().convert(ctx)
             return out
         else:
-            raise ValueError(f"Unknown {ctx.direction=}")
+            raise ValueError(f"Unknown {ctx.direction=}")  # pragma: no cover
 
 
 def get_object_mapper() -> ObjectMapper[Any, databind.json.JsonType]:
