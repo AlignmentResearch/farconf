@@ -103,7 +103,7 @@ class ABCConverter(Converter):
 
 def get_object_mapper() -> ObjectMapper[Any, databind.json.JsonType]:
     mapper = databind.json.get_object_mapper()
-    converters = mapper.module.converters[0].converters
+    converters = mapper.module.converters[0].converters  # type: ignore
     for i in range(len(converters)):
         if isinstance(converters[i], SchemaConverter):
             # Add the ABCConverter just before the SchemaConverter
