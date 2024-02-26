@@ -45,13 +45,10 @@ def test_none_abstract_parsing():
     assert parse_cli([f"--from-file={NON_ABSTRACT_ALONE_PATH}"], NonAbstractDataclass) == NonAbstractDataclass(333)
 
     with pytest.raises(TypeError):
-        _ = parse_cli([f"--from-file={NON_ABSTRACT_PATH}"], abc.ABC, type_check_partial=False)
-
-    with pytest.raises(CLIParseError):
-        _ = parse_cli([f"--from-file={NON_ABSTRACT_PATH}"], abc.ABC, type_check_partial=True)
+        _ = parse_cli([f"--from-file={NON_ABSTRACT_PATH}"], abc.ABC)
 
     with pytest.raises(KeyError, match='has no key "_type_"'):
-        _ = parse_cli([f"--from-file={NON_ABSTRACT_ALONE_PATH}"], abc.ABC, type_check_partial=False)
+        _ = parse_cli([f"--from-file={NON_ABSTRACT_ALONE_PATH}"], abc.ABC)
 
 
 def test_yaml_cli_usage():
