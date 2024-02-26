@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Any, Mapping, TypeVar
 
@@ -57,6 +58,12 @@ def parse_cli_into_dict(args: list[str]) -> dict[str, Any]:
             _, key_value_pair = _equals_key_and_value(arg)
             assign_from_keyvalue(out, key_value_pair)
 
+        elif arg.startswith("--set-json="):
+            _, key_value_pair = _equals_key_and_value(arg)
+            path_to_key, value = _equals_key_and_value(key_value_pair)
+            parsed_value = json.loads(value)
+            assign_from_dotlist(out, path_to_key, parsed_value)
+
         elif arg.startswith("--set-from-file="):
             _, key_value_pair = _equals_key_and_value(arg)
 
@@ -91,8 +98,9 @@ def parse_cli_into_dict(args: list[str]) -> dict[str, Any]:
         else:
             if arg.startswith("-"):
                 raise CLIParseError(
-                    "Only `--set`, `--set-from-file`, `--from-file`,  `--from-py-fn` and `--set-from-py-fn` arguments "
-                    "can start with `-`. If you need to set a key which starts with `-`, use `--set=-key-name=value`."
+                    "Only `--set`, `--set-json`, `--set-from-file`, `--from-file`,  `--from-py-fn` and "
+                    "`--set-from-py-fn` arguments can start with `-`. If you need to set a key which starts with `-`, "
+                    "use `--set=-key-name=value`."
                 )
             if "=" not in arg:
                 raise CLIParseError(f"Argument {arg} is not a valid assignment, it contains no `=`.")

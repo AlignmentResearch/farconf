@@ -1,8 +1,10 @@
 import abc
+import json
 from pathlib import Path
 
 import pytest
 import yaml
+from databind.json import JsonType
 
 from farconf import CLIParseError, parse_cli, parse_cli_into_dict
 from tests.integration.class_defs import (
@@ -25,6 +27,11 @@ def test_raw_set():
     assert parse_cli_into_dict(["b.c=2", "_type_=sometype:Blah", "a=b=c=d"]) == dict(
         b=dict(c=2), _type_="sometype:Blah", a="b=c=d"
     )
+
+
+@pytest.mark.parametrize("obj", [2, "hi", [2, 5, 4], {"a": 2, "b": [{"a": 3}]}])
+def test_set_json(obj: JsonType):
+    assert parse_cli_into_dict([f"--set-json=a={json.dumps(obj)}"]) == {"a": obj}
 
 
 INTEGRATION_DIR = Path("tests/integration")
