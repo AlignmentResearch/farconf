@@ -61,17 +61,17 @@ class ABCConverter(Converter):
             return out
 
         elif ctx.direction.is_deserialize():
-            if not issubclass(datatype.type, abc.ABC) and not (isinstance(ctx.value, Mapping) and self._TYPE_KEY in ctx.value):
+            cls: type[abc.ABC] = datatype.type
+
+            if not (isinstance(ctx.value, Mapping) and self._TYPE_KEY in ctx.value):
+                if issubclass(cls, abc.ABC):
+                    raise KeyError(
+                        f'Input {ctx.value} has no key "{self._TYPE_KEY}", so I don\'t know which subclass of {cls} to instantiate.'
+                    )
                 raise NotImplementedError
 
-            cls: type[abc.ABC] = datatype.type
-            ctx.value = dict(ctx.value)  # Copy before potentially popping
-            try:
-                cls_path: str = ctx.value.pop(self._TYPE_KEY)
-            except KeyError:
-                raise KeyError(
-                    f'Input {ctx.value} has no key "{self._TYPE_KEY}", so I don\'t know which subclass of {cls} to instantiate.'
-                )
+            ctx.value = dict(ctx.value)  # Copy before popping
+            cls_path: str = ctx.value.pop(self._TYPE_KEY)
             concrete_cls: type[abc.ABC] = deserialize_class_or_function(cls_path)  # type: ignore
             ctx.datatype = TypeHint(concrete_cls)
             if not issubclass(concrete_cls, cls):
