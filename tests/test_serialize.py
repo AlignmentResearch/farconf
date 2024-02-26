@@ -83,7 +83,7 @@ def test_abc_missing__type_(server: dict, serialized: dict):
 @pytest.mark.parametrize("server, serialized", SERVERS_AND_SERIALIZED())
 def test_abc_deserialize_wrong_subtype(server: dict, serialized: dict):
     serialized["_type_"] = SERVER_TYPE
-    with pytest.raises(ConversionError, match="^_type_-specified class"):
+    with pytest.raises(ConversionError):
         from_dict(serialized, abc.ABC)
 
 

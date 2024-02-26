@@ -73,7 +73,7 @@ class ABCConverter(Converter):
             cls: type[abc.ABC] = datatype.type
 
             if not isinstance(ctx.value, Mapping):
-                raise NotImplementedError
+                raise ConversionError(self, ctx, f"value must be a Mapping to deserialize into {cls}")  # pragma: nocover
 
             if self._TYPE_KEY not in ctx.value:
                 if issubclass(cls, abc.ABC):
@@ -102,7 +102,13 @@ class ABCConverter(Converter):
 
 def get_object_mapper() -> ObjectMapper[Any, databind.json.JsonType]:
     mapper = databind.json.get_object_mapper()
-    mapper.module.register(ABCConverter(), first=True)
+    converters = mapper.module.converters[0].converters
+    for i in range(len(converters)):
+        if isinstance(converters[i], SchemaConverter):
+            # Add the ABCConverter just before the SchemaConverter
+            converters.insert(i, ABCConverter())
+
+    assert any(isinstance(c, ABCConverter) for c in converters)
     return mapper
 
 
