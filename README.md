@@ -29,11 +29,9 @@ right onto the same `dict` object, and then parsed with `farconf.from_dict`.
 
   1. `--set=path.to.key=VALUE` just sets attributes `path`, `to` and `key` (for nested subclasses) to the YAML-parsed
      value `VALUE`.
-
-    - YAML parsing of values means you can specify booleans, `None`s, floats and ints in the command line.
-      - Known issue: [scienific notation for floats makes them pass as strings](https://github.com/yaml/pyyaml/issues/173).
-
-    - Equivalently you can use `path.to.key=VALUE` as an argument 
+      - YAML parsing of values means you can specify booleans, `None`s, floats and ints in the command line.
+        - Known issue: [scientific notation for floats makes them pass as strings](https://github.com/yaml/pyyaml/issues/173).
+      - Equivalently you can use `path.to.key=VALUE` as an argument 
   2. `--set-json=path.to.key="JSON_VALUE"`. Same as above but the value is formatted as JSON.
   3. `--from-file=/path/to/file.yaml`. Incorporate the values specified in `file.yaml` into the main dict.
   3. `--set-from-file=path.to.key=PATH_TO_YAML_FILE`. Same as above, but for a sub-path.
