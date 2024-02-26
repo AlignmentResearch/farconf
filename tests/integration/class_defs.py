@@ -27,7 +27,7 @@ class OneUnspecified(OneGeneric):
 
 @dataclasses.dataclass
 class OneDefault(OneGeneric):
-    c: BaseConfig = SubOneConfig(2)
+    c: BaseConfig = dataclasses.field(default_factory=lambda: SubOneConfig(2))
 
 
 @dataclasses.dataclass
