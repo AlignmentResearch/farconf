@@ -1,4 +1,5 @@
 import abc
+import dataclasses
 import importlib
 from typing import Any, Callable, ClassVar, Mapping, TypeVar
 
@@ -54,8 +55,9 @@ class ABCConverter(Converter):
                 raise NotImplementedError
 
             cls = ctx.value.__class__
-            ctx.datatype = TypeHint(cls)
-            out = SchemaConverter().convert(ctx)
+            # Copy context, replacing the datatype
+            new_ctx = dataclasses.replace(ctx, datatype=TypeHint(cls))
+            out = SchemaConverter().convert(new_ctx)
             assert self._TYPE_KEY not in out
             out[self._TYPE_KEY] = serialize_class_or_function(cls)
             return out
@@ -73,16 +75,17 @@ class ABCConverter(Converter):
                     )
                 raise NotImplementedError
 
-            ctx.value = dict(ctx.value)  # Copy before popping
-            cls_path: str = ctx.value.pop(self._TYPE_KEY)
+            new_ctx_value = dict(ctx.value)  # Copy before popping
+            cls_path: str = new_ctx_value.pop(self._TYPE_KEY)
             concrete_cls: type[abc.ABC] = deserialize_class_or_function(cls_path)  # type: ignore
-            ctx.datatype = TypeHint(concrete_cls)
             if not issubclass(concrete_cls, cls):
-                raise TypeError(
+                raise NotImplementedError(
                     f"_type_-specified class {concrete_cls} is not a subclass of {cls}, which was specified via Python "
                     "type hints."
                 )
-            out = SchemaConverter().convert(ctx)
+
+            new_ctx = dataclasses.replace(ctx, value=new_ctx_value, datatype=TypeHint(concrete_cls))
+            out = SchemaConverter().convert(new_ctx)
             return out
         else:
             raise ValueError(f"Unknown {ctx.direction=}")  # pragma: no cover

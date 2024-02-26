@@ -4,9 +4,13 @@ from pathlib import Path
 from typing import Annotated, Any
 
 import pytest
+from databind.core import ConversionError, NoMatchingConverter
 
 from farconf import from_dict, to_dict
-from farconf.serialize import deserialize_class_or_function, serialize_class_or_function
+from farconf.serialize import (
+    deserialize_class_or_function,
+    serialize_class_or_function,
+)
 
 
 # We pepper these classes with Annotated[...] to test the `_unwrap_annotated` function
@@ -82,7 +86,8 @@ def test_abc_missing__type_(server: dict, serialized: dict):
 @pytest.mark.parametrize("server, serialized", SERVERS_AND_SERIALIZED())
 def test_abc_deserialize_wrong_subtype(server: dict, serialized: dict):
     serialized["_type_"] = SERVER_TYPE
-    with pytest.raises(TypeError, match="<class 'tests.test_serialize.Server'> is not a subclass of <class 'abc.ABC'>"):
+    # TODO: make a friendlier error when this condition arises
+    with pytest.raises(NoMatchingConverter):
         from_dict(serialized, abc.ABC)
 
 
@@ -140,3 +145,8 @@ def test_path_roundtrip():
     p = Path("/path/to/something")
     assert to_dict(p) == str(p)
     assert from_dict(str(p), Path) == p
+
+
+def test_float_fails():
+    with pytest.raises(ConversionError):
+        from_dict(dict(_type_=SERVER_TYPE, host="a", ports=[], parent=None), float)
