@@ -1,13 +1,18 @@
 import abc
 import dataclasses
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 import pytest
-from databind.core import ConversionError
+from databind.core import ConversionError, ObjectMapper
+from databind.core.converter import NoMatchingConverter
 
 from farconf import from_dict, to_dict
-from farconf.serialize import deserialize_class_or_function, serialize_class_or_function
+from farconf.serialize import (
+    ABCConverter,
+    deserialize_class_or_function,
+    serialize_class_or_function,
+)
 
 
 # We pepper these classes with Annotated[...] to test the `_unwrap_annotated` function
@@ -146,3 +151,20 @@ def test_path_roundtrip():
 def test_float_fails():
     with pytest.raises(ConversionError):
         from_dict(dict(_type_=SERVER_TYPE, host="a", ports=[], parent=None), float)
+
+
+def test_non_mapping_fails():
+    mapper = ObjectMapper()
+    mapper.module.register(ABCConverter())
+    with pytest.raises(ConversionError):
+        mapper.deserialize("hi", Path)
+
+
+def test_no_class_hint_fails():
+    mapper = ObjectMapper()
+    mapper.module.register(ABCConverter())
+    with pytest.raises(NoMatchingConverter):
+        mapper.serialize("hi", Literal["hi"])
+
+    with pytest.raises(NoMatchingConverter):
+        mapper.serialize("hi", str)

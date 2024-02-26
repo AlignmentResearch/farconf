@@ -49,6 +49,7 @@ class ABCConverter(Converter):
     def convert(self, ctx: Context) -> Any:
         datatype = _unwrap_annotated(ctx.datatype)
         if not isinstance(datatype, ClassTypeHint):
+            # This should never raise when the ABCConverter is at the end
             raise NotImplementedError
 
         if hasattr(datatype.type, "_type_"):
@@ -73,7 +74,7 @@ class ABCConverter(Converter):
             cls: type[abc.ABC] = datatype.type
 
             if not isinstance(ctx.value, Mapping):
-                raise ConversionError(self, ctx, f"value must be a Mapping to deserialize into {cls}")  # pragma: nocover
+                raise ConversionError(self, ctx, f"value must be a Mapping to deserialize into {cls}")
 
             if self._TYPE_KEY not in ctx.value:
                 if issubclass(cls, abc.ABC):
