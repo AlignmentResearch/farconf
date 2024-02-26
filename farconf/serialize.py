@@ -63,7 +63,10 @@ class ABCConverter(Converter):
         elif ctx.direction.is_deserialize():
             cls: type[abc.ABC] = datatype.type
 
-            if not (isinstance(ctx.value, Mapping) and self._TYPE_KEY in ctx.value):
+            if not isinstance(ctx.value, Mapping):
+                raise NotImplementedError
+
+            if self._TYPE_KEY not in ctx.value:
                 if issubclass(cls, abc.ABC):
                     raise KeyError(
                         f'Input {ctx.value} has no key "{self._TYPE_KEY}", so I don\'t know which subclass of {cls} to instantiate.'

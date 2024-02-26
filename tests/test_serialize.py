@@ -1,5 +1,6 @@
 import abc
 import dataclasses
+from pathlib import Path
 from typing import Annotated, Any
 
 import pytest
@@ -133,3 +134,9 @@ def test_serialize_with_type_fails(cls: Any):
 
     with pytest.raises(TypeError, match="it has a '_type_' attribute which I would have to overwrite.$"):
         from_dict({}, cls)
+
+
+def test_path_roundtrip():
+    p = Path("/path/to/something")
+    assert to_dict(p) == str(p)
+    assert from_dict(str(p), Path) == p
