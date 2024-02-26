@@ -4,7 +4,14 @@ import importlib
 from typing import Any, Callable, ClassVar, Mapping, TypeVar
 
 import databind.json
-from databind.core import Context, Converter, ObjectMapper, Setting, SettingsProvider
+from databind.core import (
+    Context,
+    ConversionError,
+    Converter,
+    ObjectMapper,
+    Setting,
+    SettingsProvider,
+)
 from databind.json.converters import SchemaConverter
 from typeapi import AnnotatedTypeHint, ClassTypeHint, TypeHint
 
@@ -79,9 +86,11 @@ class ABCConverter(Converter):
             cls_path: str = new_ctx_value.pop(self._TYPE_KEY)
             concrete_cls: type[abc.ABC] = deserialize_class_or_function(cls_path)  # type: ignore
             if not issubclass(concrete_cls, cls):
-                raise NotImplementedError(
+                raise ConversionError(
+                    self,
+                    ctx,
                     f"_type_-specified class {concrete_cls} is not a subclass of {cls}, which was specified via Python "
-                    "type hints."
+                    "type hints.",
                 )
 
             new_ctx = dataclasses.replace(ctx, value=new_ctx_value, datatype=TypeHint(concrete_cls))

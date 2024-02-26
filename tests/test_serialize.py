@@ -4,13 +4,10 @@ from pathlib import Path
 from typing import Annotated, Any
 
 import pytest
-from databind.core import ConversionError, NoMatchingConverter
+from databind.core import ConversionError
 
 from farconf import from_dict, to_dict
-from farconf.serialize import (
-    deserialize_class_or_function,
-    serialize_class_or_function,
-)
+from farconf.serialize import deserialize_class_or_function, serialize_class_or_function
 
 
 # We pepper these classes with Annotated[...] to test the `_unwrap_annotated` function
@@ -86,8 +83,7 @@ def test_abc_missing__type_(server: dict, serialized: dict):
 @pytest.mark.parametrize("server, serialized", SERVERS_AND_SERIALIZED())
 def test_abc_deserialize_wrong_subtype(server: dict, serialized: dict):
     serialized["_type_"] = SERVER_TYPE
-    # TODO: make a friendlier error when this condition arises
-    with pytest.raises(NoMatchingConverter):
+    with pytest.raises(ConversionError, match="^_type_-specified class"):
         from_dict(serialized, abc.ABC)
 
 

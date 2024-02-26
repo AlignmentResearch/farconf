@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from databind.core.converter import NoMatchingConverter
+from databind.core import ConversionError
 from databind.json import JsonType
 
 from farconf import CLIParseError, parse_cli, parse_cli_into_dict
@@ -52,7 +52,7 @@ def test_none_abstract_parsing():
     assert parse_cli([f"--from-file={NON_ABSTRACT_PATH}"], NonAbstractDataclass) == NonAbstractDataclass(5489)
     assert parse_cli([f"--from-file={NON_ABSTRACT_ALONE_PATH}"], NonAbstractDataclass) == NonAbstractDataclass(333)
 
-    with pytest.raises(NoMatchingConverter):
+    with pytest.raises(ConversionError):
         _ = parse_cli([f"--from-file={NON_ABSTRACT_PATH}"], abc.ABC)
 
     with pytest.raises(KeyError, match='has no key "_type_"'):
