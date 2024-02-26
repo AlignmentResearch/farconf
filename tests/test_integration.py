@@ -1,6 +1,5 @@
 import abc
 from pathlib import Path
-from typing import Sequence
 
 import pytest
 import yaml
@@ -115,7 +114,7 @@ def _integration_args_and_expected() -> list[tuple[list[str], dict]]:
 
 
 @pytest.mark.parametrize("args, expected", _integration_args_and_expected())
-def test_quasi_well_formed_args(args: Sequence[str], expected: dict):
+def test_quasi_well_formed_args(args: list[str], expected: dict):
     """Check that `args` with an = sign in them would be well-formed, but with a space in between are not
     well-formed."""
     assert parse_cli_into_dict(["=".join(args)]) == expected

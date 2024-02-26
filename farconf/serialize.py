@@ -1,7 +1,6 @@
 import abc
 import importlib
-from types import FunctionType
-from typing import Any, ClassVar, Mapping, TypeVar
+from typing import Any, Callable, ClassVar, Mapping, TypeVar
 
 import databind.json
 from databind.core import Context, Converter, ObjectMapper, Setting, SettingsProvider
@@ -15,7 +14,7 @@ def _unwrap_annotated(hint: TypeHint) -> TypeHint:
     return hint
 
 
-def serialize_class_or_function(cls_or_fn: type | FunctionType) -> str:
+def serialize_class_or_function(cls_or_fn: type | Callable) -> str:
     """Converts class or function into a "module:qualname" string."""
     out = f"{cls_or_fn.__module__}:{cls_or_fn.__qualname__}"
     if "<locals>" in out or "<lambda>" in out:
@@ -23,7 +22,7 @@ def serialize_class_or_function(cls_or_fn: type | FunctionType) -> str:
     return out
 
 
-def deserialize_class_or_function(value: str) -> type | FunctionType:
+def deserialize_class_or_function(value: str) -> type | Callable:
     """Imports some class or function from a "module:qualname" string."""
     module_name, qualname = value.split(":")
     module = importlib.import_module(module_name)

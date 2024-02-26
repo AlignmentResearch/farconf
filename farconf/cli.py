@@ -77,6 +77,7 @@ def parse_cli_into_dict(args: list[str], *, datatype: type | None = None) -> dic
             _, file_path = _equals_key_and_value(arg)
             with Path(file_path).open() as f:
                 d = yaml.load(f, yaml.SafeLoader)
+            assert isinstance(d, dict), "Unsupported non-dict files"
             out = merge_two_mappings(out, d)
 
         elif arg.startswith("--from-py-fn="):
@@ -84,6 +85,7 @@ def parse_cli_into_dict(args: list[str], *, datatype: type | None = None) -> dic
             fn = deserialize_class_or_function(module_path)
 
             d = to_dict(fn())
+            assert isinstance(d, dict), "Unsupported non-dict objects"
             out = merge_two_mappings(out, d)
 
         else:
