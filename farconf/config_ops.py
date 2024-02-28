@@ -3,15 +3,7 @@
 
 
 from dataclasses import dataclass
-from typing import (
-    Any,
-    Callable,
-    Generic,
-    Mapping,
-    Sequence,
-    TypeVar,
-    overload,
-)
+from typing import Any, Callable, Generic, Mapping, Sequence, TypeVar, overload
 
 from farconf.serialize import ABCConverter
 
@@ -38,17 +30,17 @@ def _never(_, __):
 
 @overload
 def config_merge(c1: Mapping[str, T], c2: Mapping[str, T], *, is_leaf: LeafCallable = _never) -> dict[str, T]:
-    ...
+    ...  # pragma: no cover
 
 
 @overload
 def config_merge(c1: Sequence[T], c2: Sequence[T], *, is_leaf: LeafCallable = _never) -> list[T]:
-    ...
+    ...  # pragma: no cover
 
 
 @overload
 def config_merge(c1: Any, c2: T | Atom[T], *, is_leaf: LeafCallable = _never) -> T:
-    ...
+    ...  # pragma: no cover
 
 
 def config_merge(c1, c2, *, is_leaf=_never):
@@ -109,19 +101,19 @@ def _contains_different_type_key(c1: Any, c2: Any) -> bool:
 def config_diff(
     c_from: Mapping[str, T], c_to: Mapping[str, T], *, is_leaf: LeafCallable = _contains_different_type_key
 ) -> Atom[dict[str, T]] | dict[str, T]:
-    ...
+    ...  # pragma: no cover
 
 
 @overload
 def config_diff(
     c_from: Sequence[T], c_to: Sequence[T], *, is_leaf: LeafCallable = _contains_different_type_key
 ) -> Atom[list[T]] | list[T]:
-    ...
+    ...  # pragma: no cover
 
 
 @overload
 def config_diff(c_from: Any, c_to: T, *, is_leaf: LeafCallable = _contains_different_type_key) -> T:
-    ...
+    ...  # pragma: no cover
 
 
 def config_diff(c_from, c_to, *, is_leaf=_contains_different_type_key):
