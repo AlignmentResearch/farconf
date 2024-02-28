@@ -66,8 +66,8 @@ class ABCConverter(Converter):
             # Copy context, replacing the datatype
             new_ctx = dataclasses.replace(ctx, datatype=TypeHint(cls))
             out = SchemaConverter().convert(new_ctx)
-            assert self._TYPE_KEY not in out
-            out[self._TYPE_KEY] = serialize_class_or_function(cls)
+            # Create new dict so _TYPE_KEY goes first.
+            out = {self._TYPE_KEY: serialize_class_or_function(cls), **out}
             return out
 
         elif ctx.direction.is_deserialize():
