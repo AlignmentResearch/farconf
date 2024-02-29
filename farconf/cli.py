@@ -139,7 +139,7 @@ def obj_to_cli(obj: Atom | JsonType) -> list[str]:
     return [f"{'.'.join(keys)}={value}" for keys, value in updates]
 
 
-def update_fns_to_cli(fn_obj: Callable[[], T], *updates: Callable[[T], T]) -> list[str]:
+def update_fns_to_cli(fn_obj: Callable[[], T], *updates: Callable[[T], T]) -> tuple[list[str], T]:
     """
     Returns command-line which will generate the updates from *updates.
     """
@@ -162,10 +162,8 @@ def update_fns_to_cli(fn_obj: Callable[[], T], *updates: Callable[[T], T]) -> li
         assert new_prev_dict == cur_dict
         prev_dict = new_prev_dict
 
-        print("Prev_dict", prev_dict, "The diff is", diff)
-
         cli.extend(obj_to_cli(diff))
 
         assert parse_cli_into_dict(cli) == cur_dict
 
-    return cli
+    return cli, cur_obj

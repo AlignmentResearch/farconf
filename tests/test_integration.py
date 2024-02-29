@@ -158,23 +158,26 @@ def test_update_fns_to_cli():
         return obj
 
     obj0 = unspecified_two()
-    cli = update_fns_to_cli(unspecified_two)
+    cli, updated_obj = update_fns_to_cli(unspecified_two)
     assert cli == ["--from-py-fn=tests.integration.instances:unspecified_two"]
     assert parse_cli(cli, OneGeneric) == obj0
+    assert updated_obj == obj0
 
     obj1 = up1(unspecified_two())
-    cli = update_fns_to_cli(unspecified_two, up1)
+    cli, updated_obj = update_fns_to_cli(unspecified_two, up1)
     assert cli == ["--from-py-fn=tests.integration.instances:unspecified_two", "c.two=3"]
     assert parse_cli(cli, OneGeneric) == obj1
+    assert updated_obj == obj1
 
     obj2 = up2(up1(unspecified_two()))
-    cli = update_fns_to_cli(unspecified_two, up1, up2)
+    cli, updated_obj = update_fns_to_cli(unspecified_two, up1, up2)
     assert cli == [
         "--from-py-fn=tests.integration.instances:unspecified_two",
         "c.two=3",
         'c={"_type_": "tests.integration.class_defs:SubOneConfig", "one": 234}',
     ]
     assert parse_cli(cli, OneGeneric) == obj2
+    assert updated_obj == obj2
 
     with pytest.raises(AssertionError, match="obj.c is the wrong type"):
         update_fns_to_cli(unspecified_two, up2, up1)

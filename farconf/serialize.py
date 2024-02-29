@@ -24,7 +24,12 @@ def _unwrap_annotated(hint: TypeHint) -> TypeHint:
 
 def serialize_class_or_function(cls_or_fn: type | Callable) -> str:
     """Converts class or function into a "module:qualname" string."""
-    out = f"{cls_or_fn.__module__}:{cls_or_fn.__qualname__}"
+    mod_name = cls_or_fn.__module__
+    if mod_name == "__main__":
+        raise ValueError(
+            f"Cannot serialize object from `__main__` ({cls_or_fn}) because `__main__` may be different in a different run."
+        )
+    out = f"{mod_name}:{cls_or_fn.__qualname__}"
     if "<locals>" in out or "<lambda>" in out:
         raise ValueError(f"Cannot serialize object {cls_or_fn} because it is ephemeral.")
     return out
