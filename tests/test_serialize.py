@@ -168,3 +168,11 @@ def test_no_class_hint_fails():
 
     with pytest.raises(NoMatchingConverter):
         mapper.serialize("hi", str)
+
+
+def test_tmpdir_fixture_serialize(tmpdir):
+    serialized = to_dict(tmpdir)
+    assert serialized == str(tmpdir)
+
+    roundtrip_tmpdir = from_dict(serialized, type(tmpdir))
+    assert roundtrip_tmpdir == tmpdir

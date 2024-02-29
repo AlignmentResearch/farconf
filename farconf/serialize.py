@@ -12,7 +12,7 @@ from databind.core import (
     Setting,
     SettingsProvider,
 )
-from databind.json.converters import SchemaConverter
+from databind.json.converters import SchemaConverter, StringifyConverter
 from typeapi import AnnotatedTypeHint, ClassTypeHint, TypeHint
 
 
@@ -113,6 +113,14 @@ def get_object_mapper() -> ObjectMapper[Any, databind.json.JsonType]:
         if isinstance(converters[i], SchemaConverter):
             # Add the ABCConverter just before the SchemaConverter
             converters.insert(i, ABCConverter())
+
+    try:
+        import _pytest._py.path
+
+        # Using the tmpdir fixture in pytest (https://docs.pytest.org/en/6.2.x/tmpdir.html) yields this LocalPath type.
+        mapper.module.register(StringifyConverter(_pytest._py.path.LocalPath, name="farconf:_pytest._py.path.LocalPath"))
+    except ImportError:
+        pass
 
     assert any(isinstance(c, ABCConverter) for c in converters)
     return mapper
