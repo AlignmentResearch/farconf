@@ -1,6 +1,6 @@
 import abc
 import dataclasses
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Annotated, Any, Literal
 
 import pytest
@@ -172,7 +172,16 @@ def test_no_class_hint_fails():
 
 def test_tmpdir_fixture_serialize(tmpdir):
     serialized = to_dict(tmpdir)
-    assert serialized == str(tmpdir)
+    assert serialized == str(tmpdir) and isinstance(serialized, str)
 
     roundtrip_tmpdir = from_dict(serialized, type(tmpdir))
     assert roundtrip_tmpdir == tmpdir
+
+    assert to_dict(tmpdir, Path) == str(tmpdir)
+    assert to_dict(tmpdir, PurePath) == str(tmpdir)
+
+    assert from_dict(str(tmpdir), Path) == tmpdir
+    assert type(from_dict(str(tmpdir), Path)) != type(tmpdir)
+
+    assert from_dict(str(tmpdir), PurePath) == tmpdir
+    assert type(from_dict(str(tmpdir), PurePath)) != type(tmpdir)
