@@ -122,7 +122,8 @@ def parse_cli(args: list[str], datatype: type[T]) -> T:
 
 
 def _obj_as_dot_updates(obj: Atom | JsonType) -> list[tuple[list[str], str]]:
-    if isinstance(obj, Mapping):
+    # If one of the keys has a `.` in it, we can't set it in the command line directly -- that will be incorrect.
+    if isinstance(obj, Mapping) and not any(("." in k) for k in obj.keys()):
         out: list[tuple[list[str], str]] = []
         for k, value in obj.items():
             repr_values = _obj_as_dot_updates(value)
