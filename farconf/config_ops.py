@@ -5,8 +5,6 @@
 from dataclasses import dataclass
 from typing import Any, Callable, Generic, Mapping, Sequence, TypeVar, overload
 
-from farconf.serialize import ABCConverter
-
 T = TypeVar("T")
 
 
@@ -89,34 +87,24 @@ def config_merge(c1, c2, *, is_leaf=_never):
         return c2
 
 
-def _contains_different_type_key(c1: Any, c2: Any) -> bool:
-    """True if both c1 and c2 are Mappings, both contain _type_ keys, and they are different."""
-    _tk = ABCConverter._TYPE_KEY
-    if isinstance(c1, Mapping) and isinstance(c2, Mapping) and _tk in c1 and _tk in c2:
-        return c1[_tk] != c2[_tk]
-    return False
-
-
 @overload
 def config_diff(
-    c_from: Mapping[str, T], c_to: Mapping[str, T], *, is_leaf: LeafCallable = _contains_different_type_key
+    c_from: Mapping[str, T], c_to: Mapping[str, T], *, is_leaf: LeafCallable = _never
 ) -> Atom[dict[str, T]] | dict[str, T]:
     ...  # pragma: no cover
 
 
 @overload
-def config_diff(
-    c_from: Sequence[T], c_to: Sequence[T], *, is_leaf: LeafCallable = _contains_different_type_key
-) -> Atom[list[T]] | list[T]:
+def config_diff(c_from: Sequence[T], c_to: Sequence[T], *, is_leaf: LeafCallable = _never) -> Atom[list[T]] | list[T]:
     ...  # pragma: no cover
 
 
 @overload
-def config_diff(c_from: Any, c_to: T, *, is_leaf: LeafCallable = _contains_different_type_key) -> T:
+def config_diff(c_from: Any, c_to: T, *, is_leaf: LeafCallable = _never) -> T:
     ...  # pragma: no cover
 
 
-def config_diff(c_from, c_to, *, is_leaf=_contains_different_type_key):
+def config_diff(c_from, c_to, *, is_leaf=_never):
     """Output the minimal `update` such that `merge(c_from, update) == c_to`.
 
     Args:
@@ -157,7 +145,7 @@ def config_diff(c_from, c_to, *, is_leaf=_contains_different_type_key):
                 # Iterate with a `k in union_set` filter to preserve key order
                 if key in union_set:
                     if (v_from := c_from[key]) != (v_to := c_to[key]):
-                        out[key] = config_diff(v_from, v_to)
+                        out[key] = config_diff(v_from, v_to, is_leaf=is_leaf)
             return out
 
         else:
@@ -173,7 +161,7 @@ def config_diff(c_from, c_to, *, is_leaf=_contains_different_type_key):
 
             out = list(c_to)
             for i, from_value in enumerate(c_from):
-                out[i] = config_diff(from_value, out[i])
+                out[i] = config_diff(from_value, out[i], is_leaf=is_leaf)
             return out
         else:
             return Atom(c_to)
