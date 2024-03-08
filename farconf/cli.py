@@ -37,7 +37,8 @@ def assign_from_dotlist(out: dict[str, Any], dot_key: str, value: Any) -> None:
     x[non_recursive_keys[-1]] = value
 
 
-SIMPLE_IDENTIFIER = re.compile("^[a-zA-Z:._-][a-zA-Z0-9:._-]*$")
+JSON_LIKE_CHARS = r'\[\]{}"'
+INTENDED_JSON = re.compile(f"^.*[{JSON_LIKE_CHARS}].*$")
 
 
 def assign_from_keyvalue(out: dict[str, Any], key_value_pair: str) -> None:
@@ -45,10 +46,10 @@ def assign_from_keyvalue(out: dict[str, Any], key_value_pair: str) -> None:
     try:
         parsed_value = json.loads(value)
     except json.JSONDecodeError as e:
-        if SIMPLE_IDENTIFIER.fullmatch(value):
-            parsed_value = value
+        if INTENDED_JSON.fullmatch(value):
+            raise json.JSONDecodeError(msg=f"From CLI assignment {repr(key_value_pair)}: {e.msg}", doc=e.doc, pos=e.pos)
         else:
-            raise e
+            parsed_value = value
 
     assign_from_dotlist(out, path_to_key, parsed_value)
 

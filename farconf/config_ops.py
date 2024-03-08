@@ -26,6 +26,10 @@ def _never(_, __):
     return False
 
 
+def is_sequence_and_not_str(obj: Any) -> bool:
+    return not isinstance(obj, str) and isinstance(obj, Sequence)
+
+
 @overload
 def config_merge(c1: Mapping[str, T], c2: Mapping[str, T], *, is_leaf: LeafCallable = _never) -> dict[str, T]:
     ...  # pragma: no cover
@@ -76,9 +80,10 @@ def config_merge(c1, c2, *, is_leaf=_never):
         else:
             return c2
 
-    elif not isinstance(c1, str) and isinstance(c1, Sequence):
-        if not isinstance(c2, str) and isinstance(c2, Sequence):
+    elif is_sequence_and_not_str(c1):
+        if is_sequence_and_not_str(c2):
             out = [config_merge(i1, i2, is_leaf=is_leaf) for (i1, i2) in zip(c1, c2)]
+            out.extend(c1[len(c2) :])
             out.extend(c2[len(c1) :])
             return out
         else:
@@ -129,7 +134,7 @@ def config_diff(c_from, c_to, *, is_leaf=_never):
         if is_leaf(c_from, c_to):
             return Atom(c_to)
 
-        if isinstance(c_to, Mapping):
+        elif isinstance(c_to, Mapping):
             c_from_keys = set(c_from.keys())
             c_to_keys = set(c_to.keys())
 
@@ -149,22 +154,25 @@ def config_diff(c_from, c_to, *, is_leaf=_never):
             return out
 
         else:
-            return Atom(c_to)
+            return c_to
 
-    elif not isinstance(c_from, str) and isinstance(c_from, Sequence):
+    elif is_sequence_and_not_str(c_from):
         if is_leaf(c_from, c_to):
             return Atom(c_to)
 
-        if not isinstance(c_to, str) and isinstance(c_to, Sequence):
-            if len(c_to) > len(c_from):
+        elif is_sequence_and_not_str(c_to):
+            if len(c_to) < len(c_from):
                 return Atom(c_to)
 
             out = list(c_to)
             for i, from_value in enumerate(c_from):
+                if out[i:] == c_from[i:]:
+                    # Cut the diff off early if everything from now on is equal.
+                    return out[:i]
                 out[i] = config_diff(from_value, out[i], is_leaf=is_leaf)
             return out
         else:
-            return Atom(c_to)
+            return c_to
 
     # No need to check _is_leaf here because this will always be considered a leaf by `config_merge`.
     return c_to
