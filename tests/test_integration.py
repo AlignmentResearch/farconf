@@ -8,14 +8,17 @@ from databind.core import ConversionError
 from databind.json import JsonType
 
 from farconf import CLIParseError, parse_cli, parse_cli_into_dict
+from farconf.cli import update_fns_to_cli
 from tests.integration.class_defs import (
     NonAbstractDataclass,
     OneDefault,
     OneGeneric,
+    OneMaybe,
     OneUnspecified,
+    SubOneConfig,
     SubTwoConfig,
 )
-from tests.integration.instances import OneMaybe, SubOneConfig
+from tests.integration.instances import unspecified_two
 
 
 def test_set():
@@ -25,7 +28,7 @@ def test_set():
 
 def test_raw_set():
     assert parse_cli_into_dict(["a=2"]) == dict(a=2)
-    assert parse_cli_into_dict(["b.c=2", "_type_=sometype:Blah", "a=b=c=d"]) == dict(
+    assert parse_cli_into_dict(["b.c=2", "_type_=sometype:Blah", 'a="b=c=d"']) == dict(
         b=dict(c=2), _type_="sometype:Blah", a="b=c=d"
     )
 
@@ -142,3 +145,39 @@ def test_malformed_args():
 
     # Not really a use case we want to support, as `a-` is not a valid attribute name. But we'll allow it for now.
     assert parse_cli_into_dict(["a-._b=3"]) == {"a-": {"_b": 3}}
+
+
+def test_update_fns_to_cli():
+    def up1(obj: OneUnspecified) -> OneUnspecified:
+        assert isinstance(obj.c, SubTwoConfig), "obj.c is the wrong type"
+        obj.c.two = 3
+        return obj
+
+    def up2(obj: OneUnspecified) -> OneUnspecified:
+        obj.c = SubOneConfig(234)
+        return obj
+
+    obj0 = unspecified_two()
+    cli, updated_obj = update_fns_to_cli(unspecified_two)
+    assert cli == ["--from-py-fn=tests.integration.instances:unspecified_two"]
+    assert parse_cli(cli, OneGeneric) == obj0
+    assert updated_obj == obj0
+
+    obj1 = up1(unspecified_two())
+    cli, updated_obj = update_fns_to_cli(unspecified_two, up1)
+    assert cli == ["--from-py-fn=tests.integration.instances:unspecified_two", "c.two=3"]
+    assert parse_cli(cli, OneGeneric) == obj1
+    assert updated_obj == obj1
+
+    obj2 = up2(up1(unspecified_two()))
+    cli, updated_obj = update_fns_to_cli(unspecified_two, up1, up2)
+    assert cli == [
+        "--from-py-fn=tests.integration.instances:unspecified_two",
+        "c.two=3",
+        'c={"_type_": "tests.integration.class_defs:SubOneConfig", "one": 234}',
+    ]
+    assert parse_cli(cli, OneGeneric) == obj2
+    assert updated_obj == obj2
+
+    with pytest.raises(AssertionError, match="obj.c is the wrong type"):
+        update_fns_to_cli(unspecified_two, up2, up1)

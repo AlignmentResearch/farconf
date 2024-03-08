@@ -1,25 +1,22 @@
+"""Parse and create command-line arguments
+"""
 import json
+import re
 from pathlib import Path
-from typing import Any, Mapping, TypeVar
+from typing import Any, Callable, Mapping, TypeVar
 
 import yaml
+from databind.json import JsonType
 
-from farconf.serialize import deserialize_class_or_function, from_dict, to_dict
+from farconf.config_ops import Atom, config_diff, config_merge
+from farconf.serialize import (
+    deserialize_class_or_function,
+    from_dict,
+    serialize_class_or_function,
+    to_dict,
+)
 
 T = TypeVar("T")
-
-
-def merge_two_mappings(d1: Mapping[str, Any], d2: Mapping[str, Any]) -> dict[str, Any]:
-    """Merge two Mappings. Merging occurs by assigning the keys in `d2` and their recursive children onto the same
-    leaves of `d1`; unless the dicts of `d2` are wrapped in a `Leaf` object.
-    """
-    out = dict(d1)  # Shallow copy and convert to dict
-    for key, value in d2.items():
-        if isinstance(value, Mapping) and key in out and isinstance(out_at_key := out[key], Mapping):
-            out[key] = merge_two_mappings(out_at_key, value)
-        else:
-            out[key] = value
-    return out
 
 
 def _equals_key_and_value(s: str) -> tuple[str, str]:
@@ -40,9 +37,19 @@ def assign_from_dotlist(out: dict[str, Any], dot_key: str, value: Any) -> None:
     x[non_recursive_keys[-1]] = value
 
 
+JSON_LIKE_CHARS = r'\[\]{}"'
+INTENDED_JSON = re.compile(f"^.*[{JSON_LIKE_CHARS}].*$")
+
+
 def assign_from_keyvalue(out: dict[str, Any], key_value_pair: str) -> None:
     path_to_key, value = _equals_key_and_value(key_value_pair)
-    parsed_value = yaml.load(value, yaml.SafeLoader)
+    try:
+        parsed_value = json.loads(value)
+    except json.JSONDecodeError as e:
+        if INTENDED_JSON.fullmatch(value):
+            raise json.JSONDecodeError(msg=f"From CLI assignment {repr(key_value_pair)}: {e.msg}", doc=e.doc, pos=e.pos)
+        else:
+            parsed_value = value
 
     assign_from_dotlist(out, path_to_key, parsed_value)
 
@@ -85,7 +92,7 @@ def parse_cli_into_dict(args: list[str]) -> dict[str, Any]:
             with Path(file_path).open() as f:
                 d = yaml.load(f, yaml.SafeLoader)
             assert isinstance(d, dict), "Unsupported non-dict files"
-            out = merge_two_mappings(out, d)
+            out = config_merge(out, d)
 
         elif arg.startswith("--from-py-fn="):
             _, module_path = _equals_key_and_value(arg)
@@ -93,7 +100,7 @@ def parse_cli_into_dict(args: list[str]) -> dict[str, Any]:
 
             d = to_dict(fn())
             assert isinstance(d, dict), "Unsupported non-dict objects"
-            out = merge_two_mappings(out, d)
+            out = config_merge(out, d)
 
         else:
             if arg.startswith("-"):
@@ -113,3 +120,52 @@ def parse_cli(args: list[str], datatype: type[T]) -> T:
     cfg: dict = parse_cli_into_dict(args)
     out = from_dict(cfg, datatype)
     return out
+
+
+def _obj_as_dot_updates(obj: Atom | JsonType) -> list[tuple[list[str], str]]:
+    # If one of the keys has a `.` in it, we can't set it in the command line directly -- that will be incorrect.
+    if isinstance(obj, Mapping) and not any(("." in k) for k in obj.keys()):
+        out: list[tuple[list[str], str]] = []
+        for k, value in obj.items():
+            repr_values = _obj_as_dot_updates(value)
+            out.extend(([k] + ls, v) for (ls, v) in repr_values)
+        return out
+    else:
+        if isinstance(obj, Atom):
+            obj = obj.obj
+        return [([], json.dumps(obj))]
+
+
+def obj_to_cli(obj: Atom | JsonType) -> list[str]:
+    updates = _obj_as_dot_updates(obj)
+    return [f"{'.'.join(keys)}={value}" for keys, value in updates]
+
+
+def update_fns_to_cli(fn_obj: Callable[[], T], *updates: Callable[[T], T]) -> tuple[list[str], T]:
+    """
+    Returns command-line which will generate the updates from *updates.
+    """
+    prev_dict_obj = fn_obj()
+    cur_obj = fn_obj()
+
+    # We have to ensure these are two different objects because the `updates` may mutate their input
+    if cur_obj is prev_dict_obj:
+        raise ValueError(f"{fn_obj=} should create an entirely new object every time it is called.")
+
+    cli: list[str] = [f"--from-py-fn={serialize_class_or_function(fn_obj)}"]
+
+    prev_dict = to_dict(prev_dict_obj)
+    for update in updates:
+        cur_obj = update(cur_obj)
+
+        cur_dict = to_dict(cur_obj)
+        diff = config_diff(prev_dict, cur_dict)
+        new_prev_dict = config_merge(prev_dict, diff)
+        assert new_prev_dict == cur_dict
+        prev_dict = new_prev_dict
+
+        cli.extend(obj_to_cli(diff))
+
+        assert parse_cli_into_dict(cli) == cur_dict
+
+    return cli, cur_obj
