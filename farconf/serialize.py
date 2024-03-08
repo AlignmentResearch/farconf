@@ -148,11 +148,11 @@ def get_object_mapper() -> ObjectMapper[Any, databind.json.JsonType]:
         # Using the tmpdir fixture in pytest (https://docs.pytest.org/en/6.2.x/tmpdir.html) yields this LocalPath type. Make it transparent to Path
         mapper.module.register(
             LenientStringifyConverter(
-                _pytest._py.path.LocalPath, alt_serialize_type_=PurePath, name="farconf:_pytest._py.path.LocalPath"
+                _pytest._py.path.LocalPath, alt_serialize_type_=PurePath, name="_pytest._py.path:LocalPath"
             )
         )
-    except ImportError:
-        pass
+    except ImportError:  # pragma: no cover
+        pass  # pragma: no cover
 
     assert any(isinstance(c, ABCConverter) for c in converters)
     return mapper
