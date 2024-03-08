@@ -1,7 +1,8 @@
 import abc
 import dataclasses
 import importlib
-from typing import Any, Callable, ClassVar, Mapping, TypeVar
+from pathlib import PurePath
+from typing import Any, Callable, ClassVar, Mapping, Optional, Type, TypeVar
 
 import databind.json
 from databind.core import (
@@ -12,7 +13,7 @@ from databind.core import (
     Setting,
     SettingsProvider,
 )
-from databind.json.converters import SchemaConverter
+from databind.json.converters import SchemaConverter, StringifyConverter
 from typeapi import AnnotatedTypeHint, ClassTypeHint, TypeHint
 
 
@@ -106,6 +107,33 @@ class ABCConverter(Converter):
             raise ValueError(f"Unknown {ctx.direction=}")  # pragma: no cover
 
 
+T = TypeVar("T")
+
+
+class LenientStringifyConverter(StringifyConverter):
+    """De/serializes a type that can be converted to string, but does not pay as much attention to the serialization type"""
+
+    def __init__(
+        self,
+        type_: Type[T],
+        alt_serialize_type_: Type,
+        parser: Optional[Callable[[str], T]] = None,
+        formatter: Callable[[T], str] = str,
+        name: Optional[str] = None,
+    ) -> None:
+        super().__init__(type_, parser, formatter, name)
+        self.alt_serialize_type_ = alt_serialize_type_
+
+    def convert(self, ctx: Context) -> Any:
+        if ctx.direction.is_serialize():
+            datatype = _unwrap_annotated(ctx.datatype)
+            # If we're serializing and the requested type is the alt_serialize_type_, patch context so it contains `self.type_` instead.
+            if isinstance(datatype, ClassTypeHint) and issubclass(datatype.type, self.alt_serialize_type_):
+                ctx = dataclasses.replace(ctx, datatype=TypeHint(self.type_))
+
+        return super().convert(ctx)
+
+
 def get_object_mapper() -> ObjectMapper[Any, databind.json.JsonType]:
     mapper = databind.json.get_object_mapper()
     converters = mapper.module.converters[0].converters  # type: ignore
@@ -114,11 +142,20 @@ def get_object_mapper() -> ObjectMapper[Any, databind.json.JsonType]:
             # Add the ABCConverter just before the SchemaConverter
             converters.insert(i, ABCConverter())
 
+    try:
+        import _pytest._py.path
+
+        # Using the tmpdir fixture in pytest (https://docs.pytest.org/en/6.2.x/tmpdir.html) yields this LocalPath type. Make it transparent to Path
+        mapper.module.register(
+            LenientStringifyConverter(
+                _pytest._py.path.LocalPath, alt_serialize_type_=PurePath, name="_pytest._py.path:LocalPath"
+            )
+        )
+    except ImportError:  # pragma: no cover
+        pass  # pragma: no cover
+
     assert any(isinstance(c, ABCConverter) for c in converters)
     return mapper
-
-
-T = TypeVar("T")
 
 
 def from_dict(
