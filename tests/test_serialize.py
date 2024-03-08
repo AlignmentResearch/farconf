@@ -1,5 +1,7 @@
 import abc
 import dataclasses
+import subprocess
+import sys
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -112,6 +114,27 @@ def test_serialize_locals_lambda_errors():
 
     with pytest.raises(ValueError):
         serialize_class_or_function(f)
+
+
+def test_serialize_main_error():
+    out = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            """
+from farconf.serialize import serialize_class_or_function
+
+def f():
+    return 2
+
+serialize_class_or_function(f)
+    """,
+        ],
+        stderr=subprocess.PIPE,
+    )
+    assert out.returncode == 1
+    stderr = out.stderr.decode("utf-8")
+    assert "ValueError: Cannot serialize object from `__main__`" in stderr
 
 
 class AbstractClsWithType(abc.ABC):
