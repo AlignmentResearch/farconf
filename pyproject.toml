@@ -18,7 +18,9 @@ maintainers = [
 classifiers = []
 
 dependencies = [
-    "databind @ git+https://github.com/rhaps0dy/python-databind@bump-typeapi",
+    "databind @ git+https://github.com/rhaps0dy/python-databind@bump-typeapi#subdirectory=databind",
+    "databind-core @ git+https://github.com/rhaps0dy/python-databind@bump-typeapi#subdirectory=databind.core",
+    "databind-json @ git+https://github.com/rhaps0dy/python-databind@bump-typeapi#subdirectory=databind.json",
     "typeapi >=2.0.1, <3",
     "PyYAML >= 6.0.1, <7"
 ]
