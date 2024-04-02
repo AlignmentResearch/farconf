@@ -150,7 +150,7 @@ def _sequence_is_leaf_if_different(c_from: Any, c_to: Any) -> bool:
     the diff for two identical lists is `c_to`. This case does not arise when using `update_fns_to_cli`, but we test for
     it anyways in `tests/test_cli.py::test_update_list_nothing`
     """
-    return (c_from != c_to) and isinstance(c_to, Sequence)
+    return isinstance(c_to, Sequence) and (c_from != c_to)
 
 
 if TYPE_CHECKING:
