@@ -60,7 +60,7 @@ class CLIParseError(ValueError):
 
 def parse_cli_into_dict(args: list[str]) -> dict[str, Any]:
     out: dict[str, Any] = {}
-    for arg in args:
+    for arg_idx, arg in enumerate(args):
         if arg.startswith("--set="):
             _, key_value_pair = _equals_key_and_value(arg)
             assign_from_keyvalue(out, key_value_pair)
@@ -88,19 +88,26 @@ def parse_cli_into_dict(args: list[str]) -> dict[str, Any]:
             assign_from_dotlist(out, path_to_key, serialized_object)
 
         elif arg.startswith("--from-file="):
+            if arg_idx != 0:
+                raise CLIParseError(f"--from-file= argument can only be the first argument, but I received {args}")
+
             _, file_path = _equals_key_and_value(arg)
             with Path(file_path).open() as f:
                 d = yaml.load(f, yaml.SafeLoader)
             assert isinstance(d, dict), "Unsupported non-dict files"
-            out = config_merge(out, d)
+            assert out == {}
+            out = d
 
         elif arg.startswith("--from-py-fn="):
+            if arg_idx != 0:
+                raise CLIParseError(f"--from-py-fn= argument can only be the first argument, but I received {args}")
             _, module_path = _equals_key_and_value(arg)
             fn = deserialize_class_or_function(module_path)
 
             d = to_dict(fn())
             assert isinstance(d, dict), "Unsupported non-dict objects"
-            out = config_merge(out, d)
+            assert out == {}
+            out = d
 
         else:
             if arg.startswith("-"):
