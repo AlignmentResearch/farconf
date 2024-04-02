@@ -3,7 +3,7 @@
 import json
 import re
 from pathlib import Path
-from typing import Any, Callable, Mapping, TypeVar
+from typing import Any, Callable, Mapping, Sequence, TypeVar
 
 import yaml
 from databind.json import JsonType
@@ -141,6 +141,14 @@ def obj_to_cli(obj: Atom | JsonType) -> list[str]:
     return [f"{'.'.join(keys)}={value}" for keys, value in updates]
 
 
+def _sequence_is_always_leaf(c_from: Any, c_to: Any) -> bool:
+    """
+    Setting individual objects on the CLI does not support merging lists. Thus, we should always write out list objects
+    in full.
+    """
+    return isinstance(c_to, Sequence)
+
+
 def update_fns_to_cli(fn_obj: Callable[[], T], *updates: Callable[[T], T]) -> tuple[list[str], T]:
     """
     Returns command-line which will generate the updates from *updates.
@@ -159,7 +167,7 @@ def update_fns_to_cli(fn_obj: Callable[[], T], *updates: Callable[[T], T]) -> tu
         cur_obj = update(cur_obj)
 
         cur_dict = to_dict(cur_obj)
-        diff = config_diff(prev_dict, cur_dict)
+        diff = config_diff(prev_dict, cur_dict, is_leaf=_sequence_is_always_leaf)
         new_prev_dict = config_merge(prev_dict, diff)
         assert new_prev_dict == cur_dict
         prev_dict = new_prev_dict

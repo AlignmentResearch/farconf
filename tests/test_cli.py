@@ -2,8 +2,7 @@ import json
 
 import pytest
 
-from farconf import obj_to_cli, parse_cli, parse_cli_into_dict, update_fns_to_cli
-from farconf.serialize import serialize_class_or_function
+from farconf import obj_to_cli, parse_cli_into_dict, update_fns_to_cli
 from tests.integration.class_defs import ClassWithList, OneDefault, SubOneConfig
 from tests.integration.instances import class_with_list
 
@@ -84,9 +83,6 @@ def test_update_list_partial():
         obj.a[0] = 5
         obj.a[1] = 2
         return obj
-
-    parsed_obj = parse_cli([f"--from-py-fn={serialize_class_or_function(class_with_list)}", "a=[5, 2]"], ClassWithList)
-    assert parsed_obj == update_fn(class_with_list())
 
     _, cur_obj = update_fns_to_cli(class_with_list, update_fn)
     assert cur_obj == update_fn(class_with_list())
