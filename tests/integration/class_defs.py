@@ -38,3 +38,8 @@ class OneMaybe(OneGeneric):
 @dataclasses.dataclass
 class NonAbstractDataclass:
     a: int
+
+
+@dataclasses.dataclass
+class ClassWithList:
+    a: list[int]
