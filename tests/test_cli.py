@@ -2,7 +2,8 @@ import json
 
 import pytest
 
-from farconf import obj_to_cli, parse_cli_into_dict, update_fns_to_cli
+from farconf import config_diff, obj_to_cli, parse_cli_into_dict, update_fns_to_cli
+from farconf.cli import _sequence_is_leaf_if_different
 from tests.integration.class_defs import ClassWithList, OneDefault, SubOneConfig
 from tests.integration.instances import class_with_list
 
@@ -86,3 +87,12 @@ def test_update_list_partial():
 
     _, cur_obj = update_fns_to_cli(class_with_list, update_fn)
     assert cur_obj == update_fn(class_with_list())
+
+
+def _list_of_objects():
+    return [OneDefault(c=SubOneConfig(2)), ClassWithList([4])]
+
+
+def test_update_list_nothing():
+    obj = _list_of_objects()
+    assert config_diff(obj, obj, is_leaf=_sequence_is_leaf_if_different) == []
