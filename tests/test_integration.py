@@ -64,14 +64,10 @@ def test_none_abstract_parsing():
 
 def test_yaml_cli_usage():
     assert parse_cli([f"--from-py-fn={INSTANCES_PYPATH}:maybe_yes"], OneGeneric) == OneMaybe(SubOneConfig(55555))
-    assert parse_cli(
-        [f"--from-py-fn={INSTANCES_PYPATH}:maybe_yes", f"--from-file={ONEMAYBE_NO_PATH}"], OneGeneric
-    ) == OneMaybe(None)
+    assert parse_cli([f"--from-file={ONEMAYBE_NO_PATH}"], OneGeneric) == OneMaybe(None)
     assert parse_cli([f"--from-py-fn={INSTANCES_PYPATH}:default_two"], OneGeneric) == OneDefault(SubTwoConfig(1234))
 
-    assert parse_cli([f"--from-py-fn={INSTANCES_PYPATH}:default_two", f"--from-file={ONE_PATH}"], OneGeneric) == OneDefault(
-        SubTwoConfig(432)
-    )
+    assert parse_cli([f"--from-file={ONE_PATH}"], OneGeneric) == OneDefault(SubTwoConfig(432))
 
     assert parse_cli([f"--from-py-fn={INSTANCES_PYPATH}:unspecified_two"], OneGeneric) == OneUnspecified(SubTwoConfig(54321))
 
@@ -83,6 +79,17 @@ def test_yaml_cli_usage():
         [f"--from-py-fn={INSTANCES_PYPATH}:unspecified_two", f"--set-from-file=c={SUBTWO_PATH}"],
         OneGeneric,
     ) == OneUnspecified(SubTwoConfig(11))
+
+
+def test_from_cli_py_only_first():
+    with pytest.raises(CLIParseError, match="^--from-file= argument can only.*$"):
+        parse_cli_into_dict(["--set=a=2", "--from-file=whatever"])
+
+    with pytest.raises(CLIParseError, match="^--from-py-fn= argument can only.*$"):
+        parse_cli_into_dict(["--set=a=2", "--from-py-fn=whatever"])
+
+    with pytest.raises(CLIParseError, match="^--from-py-fn= argument can only.*$"):
+        parse_cli_into_dict([f"--from-file={ONEMAYBE_NO_PATH}", "--from-py-fn=whatever"])
 
 
 def test_overwrite_with_object():
