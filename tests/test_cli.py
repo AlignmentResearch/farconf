@@ -3,7 +3,8 @@ import json
 import pytest
 
 from farconf import obj_to_cli, parse_cli_into_dict, update_fns_to_cli
-from tests.integration.class_defs import OneDefault, SubOneConfig
+from tests.integration.class_defs import ClassWithList, OneDefault, SubOneConfig
+from tests.integration.instances import class_with_list
 
 
 def test_obj_to_cli():
@@ -75,3 +76,13 @@ def test_update_fns_same_obj():
 
     with pytest.raises(ValueError, match="Cannot serialize object <.*> because it is ephemeral"):
         update_fns_to_cli(lambda: OneDefault())
+
+
+def test_update_list_partial():
+    def update_fn(obj: ClassWithList) -> ClassWithList:
+        obj.a[0] = 5
+        obj.a[1] = 2
+        return obj
+
+    _, cur_obj = update_fns_to_cli(class_with_list, update_fn)
+    assert cur_obj == update_fn(class_with_list())

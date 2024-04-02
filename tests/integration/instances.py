@@ -1,4 +1,5 @@
 from tests.integration.class_defs import (
+    ClassWithList,
     OneDefault,
     OneMaybe,
     OneUnspecified,
@@ -21,3 +22,7 @@ def maybe_yes():
 
 def maybe_no():
     return OneMaybe(None)
+
+
+def class_with_list():
+    return ClassWithList(a=[2, 3, 4, 5])
