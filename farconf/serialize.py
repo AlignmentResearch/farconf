@@ -72,6 +72,13 @@ class ABCConverter(Converter):
             # Copy context, replacing the datatype
             new_ctx = dataclasses.replace(ctx, datatype=TypeHint(cls))
             out = SchemaConverter().convert(new_ctx)
+            # Check that all the fields are still here
+            out_keys = set(out.keys())
+            cls_fields = set(f.name for f in dataclasses.fields(cls))  # type: ignore
+            if out_keys != cls_fields:
+                raise ValueError(
+                    f"Failed at serializing object of type {cls}. I expected fields {cls_fields} but got fields {out_keys}. Perhaps {cls} has an unbound generic variable?"
+                )
             # Create new dict so _TYPE_KEY goes first.
             out = {self._TYPE_KEY: serialize_class_or_function(cls), **out}
             return out
