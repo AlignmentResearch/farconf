@@ -15,6 +15,7 @@ from farconf.serialize import (
     deserialize_class_or_function,
     serialize_class_or_function,
 )
+from tests.integration.class_defs import GenericInheritor
 
 
 # We pepper these classes with Annotated[...] to test the `_unwrap_annotated` function
@@ -110,7 +111,7 @@ def test_serialize_locals_lambda_errors():
         serialize_class_or_function(lambda: 2)
 
     def f():
-        return 2
+        return 2  # pragma: no cover
 
     with pytest.raises(ValueError):
         serialize_class_or_function(f)
@@ -208,3 +209,10 @@ def test_tmpdir_fixture_serialize(tmpdir):
 
     assert from_dict(str(tmpdir), PurePath) == tmpdir
     assert type(from_dict(str(tmpdir), PurePath)) != type(tmpdir)
+
+
+def test_serializing_misses_field():
+    b = GenericInheritor(2, 3)
+
+    with pytest.raises(ValueError):
+        to_dict(b, GenericInheritor)
