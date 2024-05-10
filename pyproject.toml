@@ -59,9 +59,3 @@ known-third-party = []
 
 [tool.pyright]
 exclude = []
-
-
-[tool.coverage.run]
-omit = [
-  "tests/test_*.py"
-]
