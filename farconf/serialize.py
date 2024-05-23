@@ -76,7 +76,7 @@ class ABCConverter(Converter):
             out_keys = set(out.keys())
             cls_fields = set(f.name for f in dataclasses.fields(cls))  # type: ignore
             if out_keys != cls_fields:
-                raise ValueError(
+                raise ValueError(  # pragma: no cover
                     f"Failed at serializing object of type {cls}. I expected fields {cls_fields} but got fields {out_keys}. Perhaps {cls} has an unbound generic variable?"
                 )
             # Create new dict so _TYPE_KEY goes first.
