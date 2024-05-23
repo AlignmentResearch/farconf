@@ -211,8 +211,7 @@ def test_tmpdir_fixture_serialize(tmpdir):
     assert type(from_dict(str(tmpdir), PurePath)) != type(tmpdir)
 
 
-def test_serializing_misses_field():
+def test_serializing_does_not_miss_field():
     b = GenericInheritor(2, 3)
-
-    with pytest.raises(ValueError):
-        to_dict(b, GenericInheritor)
+    out = to_dict(b, GenericInheritor)
+    assert out == {"_type_": "tests.integration.class_defs:GenericInheritor", "a_field": 2, "b_field": 3}
