@@ -18,7 +18,7 @@ maintainers = [
 classifiers = []
 
 dependencies = [
-    "databind @ https+git://github.com/rhaps0dy/python-databind.git@merge-fixes",
+    "databind @ git+https://github.com/rhaps0dy/python-databind.git@merge-fixes",
     "typeapi >=2.0.1, <3",
     "PyYAML >= 6.0.1, <7"
 ]
