@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from farconf import config_diff, obj_to_cli, parse_cli_into_dict, update_fns_to_cli
+from farconf import config_diff, obj_to_cli, parse_cli_into_dict, typed_dotlist, update_fns_to_cli
 from farconf.cli import _sequence_is_leaf_if_different
 from tests.integration.class_defs import ClassWithList, OneDefault, SubOneConfig
 from tests.integration.instances import class_with_list
@@ -96,3 +96,10 @@ def _list_of_objects():
 def test_update_list_nothing():
     obj = _list_of_objects()
     assert config_diff(obj, obj, is_leaf=_sequence_is_leaf_if_different) == []
+
+
+def test_typed_dotlist():
+    g = typed_dotlist(OneDefault())
+
+    assert str(g) == ""
+    assert str(g.one.two) == "g.one.two"

@@ -3,6 +3,7 @@ from .cli import (
     obj_to_cli,
     parse_cli,
     parse_cli_into_dict,
+    typed_dotlist,
     update_fns_to_cli,
 )
 from .config_ops import config_diff, config_merge
@@ -15,6 +16,7 @@ __all__ = [
     "parse_cli",
     "parse_cli_into_dict",
     "update_fns_to_cli",
+    "typed_dotlist",
     # config_ops
     "config_diff",
     "config_merge",
