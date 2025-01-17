@@ -9,7 +9,7 @@ import yaml
 from databind.json import JsonType
 
 from farconf.config_ops import Atom, config_diff, config_merge
-from farconf.serialize import DataclassT, deserialize_class_or_function, from_dict, serialize_class_or_function, to_dict
+from farconf.serialize import deserialize_class_or_function, from_dict, serialize_class_or_function, to_dict
 
 T = TypeVar("T")
 
@@ -202,12 +202,13 @@ class _DotlistGenerator:
         self._prefix = _prefix
 
     def __getattribute__(self, name: str, /) -> Any:
-        return _DotlistGenerator(name if self._prefix == "" else f"{self.prefix}.{name}")
+        prefix = object.__getattribute__(self, "_prefix")
+        return _DotlistGenerator(name if prefix == "" else f"{prefix}.{name}")
 
     def __str__(self) -> str:
-        return self._prefix
+        return object.__getattribute__(self, "_prefix")
 
 
 def typed_dotlist(obj: DataclassT) -> DataclassT:
     """Create dotlists in a typed way."""
-    return _DotlistGenerator(obj)  # type: ignore
+    return _DotlistGenerator("")  # type: ignore

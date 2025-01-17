@@ -102,4 +102,4 @@ def test_typed_dotlist():
     g = typed_dotlist(OneDefault())
 
     assert str(g) == ""
-    assert str(g.one.two) == "g.one.two"
+    assert str(g.one.two) == "one.two"
