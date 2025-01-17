@@ -1,5 +1,6 @@
 """Parse and create command-line arguments
 """
+import dataclasses
 import json
 import re
 from pathlib import Path
@@ -195,20 +196,42 @@ def update_fns_to_cli(
     return cli, cur_obj
 
 
-class _DotlistGenerator:
-    _prefix: str
-
-    def __init__(self, _prefix: str) -> None:
-        self._prefix = _prefix
-
-    def __getattribute__(self, name: str, /) -> Any:
-        prefix = object.__getattribute__(self, "_prefix")
-        return _DotlistGenerator(name if prefix == "" else f"{prefix}.{name}")
-
-    def __str__(self) -> str:
-        return object.__getattribute__(self, "_prefix")
-
-
-def typed_dotlist(obj: DataclassT) -> DataclassT:
+def typed_dotlist(obj: DataclassT, *, _prefix: str = "") -> DataclassT:
     """Create dotlists in a typed way."""
-    return _DotlistGenerator("")  # type: ignore
+    Cls = obj.__class__
+
+    # Create a new dotlist generator class, which is an instance of the same classes `obj` is an instance of. This lets
+    # us assert that attributes are of particular classes, which lets us do typechecking and completion in the IDE.
+    class _DotlistGenerator(Cls):  # type: ignore
+        _obj: Any
+        _prefix: str
+
+        def __init__(self, _obj: Any, _prefix: str) -> None:
+            self._obj = _obj
+            self._prefix = _prefix
+
+        def __getattribute__(self, name: str, /) -> Any:
+            new_obj = getattr(object.__getattribute__(self, "_obj"), name)
+            if name.startswith("__") and name.endswith("__"):
+                # Just return dunder attributes of the _obj
+                return new_obj
+
+            # Add this attribute's name to the prefix
+            prefix = object.__getattribute__(self, "_prefix")
+            new_prefix = name if prefix == "" else f"{prefix}.{name}"
+
+            # Before creating another typed_dotlist, check whether the new object is still a dataclass.  If it is not,
+            # it is pointless to keep track of the prefix anyways, because we shouldn't need to take any more
+            # attributes.
+            #
+            # Besides, `new_obj` might be something like an int: an object which is hard to subclass
+            if not dataclasses.is_dataclass(new_obj):
+                return new_prefix
+
+            assert not isinstance(new_obj, type)
+            return typed_dotlist(new_obj, _prefix=new_prefix)
+
+        def __str__(self) -> str:
+            return object.__getattribute__(self, "_prefix")
+
+    return _DotlistGenerator(obj, _prefix)  # type: ignore

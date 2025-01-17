@@ -100,6 +100,7 @@ def test_update_list_nothing():
 
 def test_typed_dotlist():
     g = typed_dotlist(OneDefault())
+    assert isinstance(g.c, SubOneConfig)
 
     assert str(g) == ""
-    assert str(g.one.two) == "one.two"
+    assert str(g.c.one) == "c.one"
