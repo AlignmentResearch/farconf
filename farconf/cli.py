@@ -1,5 +1,6 @@
 """Parse and create command-line arguments
 """
+import dataclasses
 import json
 import re
 from pathlib import Path
@@ -9,12 +10,7 @@ import yaml
 from databind.json import JsonType
 
 from farconf.config_ops import Atom, config_diff, config_merge
-from farconf.serialize import (
-    deserialize_class_or_function,
-    from_dict,
-    serialize_class_or_function,
-    to_dict,
-)
+from farconf.serialize import deserialize_class_or_function, from_dict, serialize_class_or_function, to_dict
 
 T = TypeVar("T")
 
@@ -198,3 +194,60 @@ def update_fns_to_cli(
         assert parse_cli_into_dict(cli) == cur_dict
 
     return cli, cur_obj
+
+
+def typed_dotlist_generator(obj: DataclassT, *, _prefix: str = "") -> DataclassT:
+    """Return an object which lets you specify dotlists in a typed way.
+
+    The purpose of this function is to let you specify dotlists like this:
+
+    ..code-block:: python
+        g = typed_dotlist_generator(obj)
+        dotlist = {
+            g.something.b.c.f: 2,
+            g.other.thing: "hello"
+        }
+
+        {str(k): v for k, v in dotlist.items()} == {"something.b.c.f": 2, "other.thing": "hello"}
+
+    This lets you use the IDE's completion to specify updates to the base object `obj`. Additionally, refactoring `obj`
+    will keep all your old experiment specifications working.
+    """
+
+    Cls = obj.__class__
+
+    # Create a new dotlist generator class, which is an instance of the same classes `obj` is an instance of. This lets
+    # us assert that attributes are of particular classes, which lets us do typechecking and completion in the IDE.
+    class _DotlistGenerator(Cls):  # type: ignore
+        _obj: Any
+        _prefix: str
+
+        def __init__(self, _obj: Any, _prefix: str) -> None:
+            self._obj = _obj
+            self._prefix = _prefix
+
+        def __getattribute__(self, name: str, /) -> Any:
+            new_obj = getattr(object.__getattribute__(self, "_obj"), name)
+            if name.startswith("__") and name.endswith("__"):
+                # Just return dunder attributes of the _obj
+                return new_obj
+
+            # Add this attribute's name to the prefix
+            prefix = object.__getattribute__(self, "_prefix")
+            new_prefix = name if prefix == "" else f"{prefix}.{name}"
+
+            # Before creating another _DotlistGenerator, check whether the new object is still a
+            # it is pointless to keep track of the prefix anyways, because we shouldn't need to take any more
+            # attributes.
+            #
+            # Besides, `new_obj` might be something like an int: an object which is hard to subclass
+            if not dataclasses.is_dataclass(new_obj):
+                return new_prefix
+
+            assert not isinstance(new_obj, type)
+            return typed_dotlist_generator(new_obj, _prefix=new_prefix)
+
+        def __str__(self) -> str:
+            return object.__getattribute__(self, "_prefix")
+
+    return _DotlistGenerator(obj, _prefix)  # type: ignore
