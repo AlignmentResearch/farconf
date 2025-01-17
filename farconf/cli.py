@@ -196,8 +196,24 @@ def update_fns_to_cli(
     return cli, cur_obj
 
 
-def typed_dotlist(obj: DataclassT, *, _prefix: str = "") -> DataclassT:
-    """Create dotlists in a typed way."""
+def typed_dotlist_generator(obj: DataclassT, *, _prefix: str = "") -> DataclassT:
+    """Return an object which lets you specify dotlists in a typed way.
+
+    The purpose of this function is to let you specify dotlists like this:
+
+    ..code-block:: python
+        g = typed_dotlist_generator(obj)
+        dotlist = {
+            g.something.b.c.f: 2,
+            g.other.thing: "hello"
+        }
+
+        {str(k): v for k, v in dotlist.items()} == {"something.b.c.f": 2, "other.thing": "hello"}
+
+    This lets you use the IDE's completion to specify updates to the base object `obj`. Additionally, refactoring `obj`
+    will keep all your old experiment specifications working.
+    """
+
     Cls = obj.__class__
 
     # Create a new dotlist generator class, which is an instance of the same classes `obj` is an instance of. This lets
@@ -220,7 +236,7 @@ def typed_dotlist(obj: DataclassT, *, _prefix: str = "") -> DataclassT:
             prefix = object.__getattribute__(self, "_prefix")
             new_prefix = name if prefix == "" else f"{prefix}.{name}"
 
-            # Before creating another typed_dotlist, check whether the new object is still a dataclass.  If it is not,
+            # Before creating another _DotlistGenerator, check whether the new object is still a
             # it is pointless to keep track of the prefix anyways, because we shouldn't need to take any more
             # attributes.
             #
@@ -229,7 +245,7 @@ def typed_dotlist(obj: DataclassT, *, _prefix: str = "") -> DataclassT:
                 return new_prefix
 
             assert not isinstance(new_obj, type)
-            return typed_dotlist(new_obj, _prefix=new_prefix)
+            return typed_dotlist_generator(new_obj, _prefix=new_prefix)
 
         def __str__(self) -> str:
             return object.__getattribute__(self, "_prefix")
